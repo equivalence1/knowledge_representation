@@ -1,0 +1,285 @@
+\documentclass{article}
+\usepackage[utf8]{inputenc}
+\usepackage[english, russian]{babel}
+
+\usepackage{minted}
+
+\begin{document}
+
+\title{Онтология грузинской кухни}
+\author{Кравченко Дима, СПб ВШЭ, 5й курс}
+
+\maketitle
+
+Сразу замечу, что, насколько я понял, в этом задании хочется, чтобы мы сами определяли
+все классы/property и т.д., а не использовали те, что уже определены во всяких общедоступных
+онтологиях типа dbpedia/ontology.
+
+Для начала, мы определяем общий список префиксов, которые используем при построении онтологии.
+
+Следующим шагов мы должны определить terminological knowledge (извиняюсь, я уже
+не помню, как это нормально переводится на русский язык). Т.к. эта часть призвана
+помочь нам в будущем записывать assertional knowledge (аналогично), которая состоит
+из описания конкретных рецептов, то логично, что она будет содержать довольно много
+определений, которые не связаны напрямую с грузинской кухней, но является общей для
+описания рецептов в целом.
+
+Затем мы определяем assertional knowledge, которое уже описывает конкретные рецепты блюд
+грузинской кухни. Всего я определил 2 рецепта -- хинкалей и ципленка табака, но остальные
+блюда задаются аналогично.
+
+Я постарался снабдить свое описание подробными комментариями.
+
+\begin{minted}{sparql}
+
+# Префиксы
+
+@prefix rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xmls: <http://www.w3.org/2001/XMLSchema#> .
+@prefix :     <http://example.org/GeorgianCuisine#> .
+
+
+
+# Terminological Knowledge
+
+## Классы
+
+### общее понятие кухни и национальной кухни
+:Cuisine           rdf:type           rdfs:Class .
+
+:NationalCuisine   rdf:type           rdfs:Class ;
+                   rdfs:subClassOf    :Cuisine .
+
+### общее понятие еды 
+:Food              rdf:type           rdfs:Class .
+
+### общее понятие рецепта
+:Recipe            rdf:type           rdfs:Class .
+
+### общее понятие ингредиента
+:Ingredient        rdf:type           rdfs:Class .
+
+### список ингредиентов
+:IngredientList    rdf:type           rdfs:Class ;
+                   rdfs:subClassOf    rdf:Seq .
+
+### общее понятие шага приготовления
+:CookingStep       rdf:type           rdfs:Class .
+
+### список шагов приготовления
+:CookingSteps      rdf:type           rdfs:Class ;
+                   rdsf:subClassOf    rdf:Seq .
+
+## Свойства
+
+### свойство принадлежности рецепта кухне
+:cuisine           rdf:type           rdfs:Property ;
+                   rdfs:domain        :Recipe ;
+                   rdfs:range         :Cuisine .
+
+### свойство наличия у рецепта списка ингредиентов
+:ing_list          rdf:type           rdfs:Property ;
+                   rdfs:domain        :Recipe ;
+                   rdfs:range         :IngredientList .
+
+### ингредиент ссылается на еду
+:ing_food          rdf:type           rdfs:Property ;
+                   rdfs:domain        :Ingredient ;
+                   rdfs:range         :Food .
+
+### ингредиент ссылается на количество еды.
+### т.к. что такое "количество" -- не очень понятно
+### (мы в штуках/граммах/кг/ложках/etc.), то для простоты
+### мы храним это просто как строку
+:ing_quantity      rdf:type           rdfs:Property ;
+                   rdfs:domain        :Ingredient ;
+                   rdfs:range         xmls:string .
+
+### элемент в списке ингредиентов
+:ing_li            rdf:type           rdfs:Property ;
+                   rdfs:subClassOf    rdf:li ;
+                   rdfs:domain        :IngredientList ;
+                   rdfs:range         :Ingredient .
+
+### свойства наличия у рецепта списка шагов приготовления
+:cooking_steps     rdf:type           rdfs:Property ;
+                   rdfs:domain        :Recipe ;
+                   rdfs:range         :CookingSteps .
+
+### описание шага в свободной форме
+:cs_desc           rdf:type           rdfs:Property ;
+                   rdfs:domain        :CookingStep ;
+                   rdfs:range         xmls:string .
+
+### Помимо описания можно было бы еще добавить ссылку на картику
+### но я не хочу переписывать все эти ссылки.
+
+### элемент в списке шагов приготовления
+:step_li           rdf:type           rdfs:Property ;
+                   rdfs:subClassOf    rdf:li ;
+                   rdfs:domain        :CookingSteps ;
+                   rdfs:range         :CookingStep .
+
+# Assertional Knowledge
+
+### В самом начале нам надо определить сам объект грузинской кухни
+:GeorgianCuisine rdf:type :NationalCuisine .
+
+
+## Рецепт хинкалей
+
+### см (https://eda.ru/recepty/osnovnye-blyuda/hinkali-26016)
+
+### первое, что мы должны определить -- это объекты еды,
+### которые нам будут встречаться в ингредиентах этого блюда
+
+:Flour     rdf:type       :Food ;
+           rdfs:label     "Мука" .
+
+:Water     rdf:type       :Food ;
+           rdfs:label     "Вода" .
+
+:Salt      rdf:type       :Food ;
+           rdfs:label     "Соль" .
+
+:Veal      rdf:type       :Food ;
+           rdfs:label     "Телятина" .
+
+:Beef      rdf:type       :Food ;
+           rdfs:label     "Говядина" .
+
+:Fat       rdf:type       :Food ;
+           rdfs:label     "Сало" .
+
+:Onion     rdf:type       :Food ;
+           rdfs:label     "Лук репчатый" .
+
+:Garlic    rdf:type       :Food ;
+           rdfs:label     "Чеснок" .
+
+:Cumin     rdf:type       :Food ;
+           rdfs:label     "Молотый кумин" .
+
+:Chilli    rdf:type       :Food ;
+           rdfs:label     "Перец чили" .
+
+:Cilantro  rdf:type       :Food ;
+           rdfs:label     "Кинза" .
+
+### список ингредиентов
+:KhinkaliIngredientList   rdf:type  :IngredientList ;
+                          :ing_li   [ a              :Ingredient ;
+                                      :ing_food      :Flour ;
+                                      :ing_quantity  "500 г"^^xmls:string ] ;
+                          :ing_li   [ a              :Ingredient ;
+                                      :ing_food      :Water ;
+                                      :ing_quantity  "300 мл"^^xmls:string ] ;
+                          :ing_li   [ a              :Ingredient ;
+                                      :ing_food      :Salt ;
+                                      :ing_quantity  "1.5 чайные ложки"^^xmls:string ] ;
+                          :ing_li   [ a              :Ingredient ;
+                                      :ing_food      :Veal ;
+                                      :ing_quantity  "250 г"^^xmls:string ] ;
+                          :ing_li   [ a              :Ingredient ;
+                                      :ing_food      :Beef ;
+                                      :ing_quantity  "250 г"^^xmls:string ] ;
+                          :ing_li   [ a              :Ingredient ;
+                                      :ing_food      :Fat ;
+                                      :ing_quantity  "100 г"^^xmls:string ] ;
+                          :ing_li   [ a              :Ingredient ;
+                                      :ing_food      :Onion ;
+                                      :ing_quantity  "100 г"^^xmls:string ] ;
+                          :ing_li   [ a              :Ingredient ;
+                                      :ing_food      :Garlic ;
+                                      :ing_quantity  "2 зубчика"^^xmls:string ] ;
+                          :ing_li   [ a              :Ingredient ;
+                                      :ing_food      :Cumin ;
+                                      :ing_quantity  "по вкусу"^^xmls:string ] ;
+                          :ing_li   [ a              :Ingredient ;
+                                      :ing_food      :Chilli ;
+                                      :ing_quantity  "по вкусу"^^xmls:string ] ;
+                          :ing_li   [ a              :Ingredient ;
+                                      :ing_food      :Cilantro ;
+                                      :int_quantity  "по вкусу"^^xmls:string ] .
+
+### шаги приготовления.
+### Я не стал вставлять сюда текста самих шагов, т.к. они очень длинные.
+:KhinkaliCookingSteps     rdf:type  :CookingSteps ;
+                          :step_li  [ a              :CookingStep ;
+                                      :cs_desc       "1."^^xmls:string ] ;
+                          :step_li  [ a              :CookingStep ;
+                                      :cs_desc       "2."^^xmls:string ] ;
+                          :step_li  [ a              :CookingStep ;
+                                      :cs_desc       "3."^^xmls:string ] ;
+                          :step_li  [ a              :CookingStep ;
+                                      :cs_desc       "4."^^xmls:string ] ;
+                          :step_li  [ a              :CookingStep ;
+                                      :cs_desc       "5."^^xmls:string ] .
+
+### и, наконец, сам рецепт
+:KhinkaliDish   rdf:type           :Recipe ;
+                :ing_list          :KhinkaliIngredientList ;
+                :cooking_steps     :KhinkaliCookingSteps ;
+                :cuisine           :GeorgianCuisine .
+
+
+## Рецепт цыпленка табака
+
+### доопределяем те продукты, которые еще не определили
+:MeltedButter         rdf:type           :Food ;
+                      rdfs:label         "Топленое масло" .
+
+:Chick                rdf:type           :Food ;
+                      rdfs:label         "Цыпленок" .
+
+:Pepper               rdf:type           :Food ;
+                      rdfs:label         "Молотый перец" .
+
+### список ингредиентов
+:TChickenIngList          rdf:type    :IngredientList ;
+                          :ing_li     [ a             :Ingredient ;
+                                        :ing_food     :MeltedButter ;
+                                        :ing_quantity "2 столовые ложки"^^xmls:string ] ;
+                          :ing_li     [ a             :Ingredient ;
+                                        :ing_food     :Chick ;
+                                        :ing_quantity "1 штука"^^xmls:string ] ;
+                          :ing_li     [ a             :Ingredient ;
+                                        :ing_food     :Garlic ;
+                                        :ing_quantity "1 головка"^^xmls:string ] ;
+                          :ing_li     [ a             :Ingredient ;
+                                        :ing_food     :Salt ;
+                                        :ing_quantity "по вкусу"^^xmls:string ] ;
+                          :ing_li     [ a             :Ingredient ;
+                                        :ing_food     :Pepper ;
+                                        :ing_quantity "по вкусу"^^xmls:string ] .
+
+### шаги приготовления.
+### Я не стал вставлять сюда текста самих шагов, т.к. они очень длинные.
+:TChickenCookingSteps     rdf:type  :CookingSteps ;
+                          :step_li    [ a              :CookingStep ;
+                                        :cs_desc       "1."^^xmls:string ] ;
+                          :step_li    [ a              :CookingStep ;
+                                        :cs_desc       "2."^^xmls:string ] ;
+                          :step_li    [ a              :CookingStep ;
+                                        :cs_desc       "3."^^xmls:string ] ;
+                          :step_li    [ a              :CookingStep ;
+                                        :cs_desc       "4."^^xmls:string ] ;
+                          :step_li    [ a              :CookingStep ;
+                                        :cs_desc       "5."^^xmls:string ] .
+
+### сам рецепт
+:TChicken       rdf:type           :Recipe ;
+                :ing_list          :TChickenIngList ;
+                :cooking_steps     :TChickenCookingSteps ;
+                :cuisine           :GeorgianCuisine .
+
+
+\end{minted}
+ 
+Понятно, что на сайте \texttt{eda.ru} у рецепта блюда намного больше всяких свойств, чем просто
+список ингредиентов и пошаговая инструкция приготовления, но понятно, что, во-первых, эти
+два все же являются основными, которых хватает именно для приготовления блюда, во-вторых,
+все остальные свойства задаются аналогичным образом.
+
+\end{document}
