@@ -38,7 +38,7 @@ class RuSpotlightAnnotator:
             headers={
                 "Accept": "application/json",
             },
-            body=("text=" + text).encode('utf-8'))
+            body=("text=" + text + "&" + "types=Person,Organisation,Place").encode('utf-8'))
         return r.data.decode('utf-8')
 
     @staticmethod
