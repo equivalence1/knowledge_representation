@@ -1,17 +1,21 @@
 import annotation
 import ru_spotlight_annotator
+import person_detector
 import datetime
 
 
 class TitlesAnnotator:
-
     def __init__(self):
         self.annotators = [ru_spotlight_annotator.RuSpotlightAnnotator()]
+        self.restrictors = [person_detector.PersonDetector()]
+
+    def restrict(self, annot_text: annotation.AnnotatedText):
+        for restrictor in self.restrictors:
+            restrictor.add_restrictions(annot_text)
 
     def annotate(self, annot_text: annotation.AnnotatedText):
         for annotator in self.annotators:
             annotator.annotate(annot_text)
-        return annot_text.to_string()
 
     def annotate_titles(self, in_file_path, out_file_path):
         # TODO annotators selection
@@ -24,7 +28,9 @@ class TitlesAnnotator:
                     line_id = splitted_line[0]
                     line_text = splitted_line[1]
                     annot_text = annotation.AnnotatedText(line_id, line_text)
-                    out.write(self.annotate(annot_text) + "\n")
+                    self.restrict(annot_text)
+                    self.annotate(annot_text)
+                    out.write(annot_text.to_string() + "\n")
                     if line_id[-2:] == "00":
                         cur_time = datetime.datetime.now()
                         time_delta = cur_time - start_time

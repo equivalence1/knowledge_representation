@@ -27,7 +27,7 @@ class RuSpotlightAnnotator:
 
     def annotate(self, ann_text):
         json_annotations = self.__get_json_annotations(ann_text.text)
-        annotations = self.__json_extract_annotations(json_annotations)
+        annotations = self.__json_extract_annotations(json_annotations, ann_text.text)
         for ann in annotations:
             ann_text.add_annotation(ann)
 
@@ -42,15 +42,24 @@ class RuSpotlightAnnotator:
         return r.data.decode('utf-8')
 
     @staticmethod
-    def __json_extract_annotation(resource):
-        text = resource["@surfaceForm"]
+    def __json_extract_annotation(resource, text):
+        surfForm = resource["@surfaceForm"]
+        lpos = text.find(surfForm)
+        rpos = lpos + len(surfForm)
         uri = resource["@URI"]
-        return annotation.Annotation(text, uri)
+        types = resource["@types"]
+        if "DBpedia:Place" in types:
+            annot_type = "Place"
+        elif "DBpedia:Person" in types:
+            annot_type = "Person"
+        else:
+            annot_type = "Organisation"
+        return annotation.Annotation(lpos, rpos, uri, annot_type)
 
-    def __json_extract_annotations(self, json_annotations):
+    def __json_extract_annotations(self, json_annotations, text):
         annotations_map = json.loads(json_annotations)
         if "Resources" in annotations_map:
-            annotations = [self.__json_extract_annotation(res) for res in annotations_map["Resources"]]
+            annotations = [self.__json_extract_annotation(res, text) for res in annotations_map["Resources"]]
         else:
             annotations = []
         return annotations

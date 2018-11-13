@@ -1,7 +1,19 @@
+import utils
+
+
 class Annotation:
-    def __init__(self, text, uri):
-        self.text = text
+    def __init__(self, lpos, rpos, uri, type):
+        self.lpos = lpos
+        self.rpos = rpos
         self.uri = uri
+        self.type = type
+
+
+class Restriction:
+    def __init__(self, lpos, rpos, type):
+        self.lpos = lpos
+        self.rpos = rpos
+        self.type = type
 
 
 class AnnotatedText:
@@ -9,10 +21,21 @@ class AnnotatedText:
         self.text_id = text_id
         self.text = text
         self.annotations = []
+        self.restrictions = []
 
-    def add_annotation(self, annotation):
-        self.annotations.append(annotation)
+    def add_annotation(self, annot):
+        for restr in self.restrictions:
+            if utils.segments_intersect((restr.lpos, restr.rpos),
+                                        (annot.lpos, annot.rpos)) and \
+                    restr.type != annot.type:
+                return
+        self.annotations.append(annot)
+
+    def add_restriction(self, restriction):
+        self.restrictions.append(restriction)
 
     def to_string(self):
-        annot_texts = map(lambda annot: annot.text + "\t" + annot.uri, self.annotations)
+        def annot_text(annot):
+            return self.text[annot.lpos:annot.rpos] + "\t" + annot.uri
+        annot_texts = map(annot_text, self.annotations)
         return self.text_id + "\t" + "\t".join(annot_texts)
