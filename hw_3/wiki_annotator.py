@@ -1,5 +1,6 @@
 import wikipedia
 import annotation
+import utils
 import pymystem3
 import ner_detector
 from SPARQLWrapper import SPARQLWrapper, JSON
@@ -27,32 +28,46 @@ class WikiAnnotator:
         self.ner = ner_detector.NerDetector()
 
     def annotate(self, annot_text):
+        def should_skip(restr, annot_text):
+            for annot in annot_text.annotations:
+                if utils.segments_intersect((restr.lpos, restr.rpos),
+                                            (annot.lpos, annot.rpos)):
+                    return True
+            return False
+
         for restr in self.ner.get_restrictions(annot_text):
+            # Ner is SUPER bad with persons
+            if restr.type == "Person":
+                continue
+            if should_skip(restr, annot_text):
+                continue
             annot = self.__get_annotation(restr, annot_text)
             if annot is not None:
                 annot_text.add_annotation(annot)
         for restr in annot_text.restrictions:
+            if should_skip(restr, annot_text):
+                continue
             annot = self.__get_annotation(restr, annot_text)
             if annot is not None:
                 annot_text.add_annotation(annot)
 
     def __get_annotation(self, restr, annot_text):
-        text = annot_text.text[restr.lpos:restr.rpos]
-        text = "".join(self.stem.lemmatize(text))
-        s_res = wikipedia.search(text)
-        if len(s_res) == 0:
+        try:
+            text = annot_text.text[restr.lpos:restr.rpos]
+            text = "".join(self.stem.lemmatize(text))
+            pg = wikipedia.page(title=text, auto_suggest=True)
+            query = self._query_template % (pg.pageid, restr.type)
+            self.sparql.setQuery(query)
+            uri = self.__retrieve_uri(self.sparql.query().convert())
+            if uri == "":
+                return None
+            return annotation.Annotation(restr.lpos, restr.rpos, uri, restr.type)
+        except:
             return None
-        pg = wikipedia.page(s_res[0])
-        query = self._query_template % (pg.pageid, restr.type)
-        self.sparql.setQuery(query)
-        uri = self.__retrieve_uri(self.sparql.query().convert())
-        if uri == "":
-            return None
-        return annotation.Annotation(restr.lpos, restr.rpos, uri, restr.type)
 
     @staticmethod
     def __retrieve_uri(query_res):
         try:
-            return query_res["result"]["bindings"][0]["res"]["value"]
+            return query_res["results"]["bindings"][0]["res"]["value"]
         except:
             return ""

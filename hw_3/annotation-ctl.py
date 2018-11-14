@@ -1,7 +1,6 @@
 import annotation
 import ru_spotlight_annotator
 import person_detector
-import ner_detector
 import wiki_annotator
 import datetime
 
@@ -33,10 +32,12 @@ class TitlesAnnotator:
                     self.restrict(annot_text)
                     self.annotate(annot_text)
                     out.write(annot_text.to_string() + "\n")
+                    print(annot_text.to_string())
                     if line_id[-2:] == "00":
                         cur_time = datetime.datetime.now()
                         time_delta = cur_time - start_time
                         print("Annotated", line_id, "lines, took", time_delta)
+                        out.flush()
 
 
 if __name__ == "__main__":
