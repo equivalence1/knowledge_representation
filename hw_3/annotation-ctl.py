@@ -1,12 +1,14 @@
 import annotation
 import ru_spotlight_annotator
 import person_detector
+import ner_detector
+import wiki_annotator
 import datetime
 
 
 class TitlesAnnotator:
     def __init__(self):
-        self.annotators = [ru_spotlight_annotator.RuSpotlightAnnotator()]
+        self.annotators = [ru_spotlight_annotator.RuSpotlightAnnotator(), wiki_annotator.WikiAnnotator()]
         self.restrictors = [person_detector.PersonDetector()]
 
     def restrict(self, annot_text: annotation.AnnotatedText):

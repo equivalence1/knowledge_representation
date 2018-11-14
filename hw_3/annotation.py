@@ -8,6 +8,9 @@ class Annotation:
         self.uri = uri
         self.type = type
 
+    def to_string(self):
+        return str(self.lpos) + " " + str(self.rpos) + " " + str(self.uri) + " " + str(self.type)
+
 
 class Restriction:
     def __init__(self, lpos, rpos, type):
@@ -28,6 +31,10 @@ class AnnotatedText:
             if utils.segments_intersect((restr.lpos, restr.rpos),
                                         (annot.lpos, annot.rpos)) and \
                     restr.type != annot.type:
+                return
+        for annot1 in self.annotations:
+            if utils.segments_intersect((annot.lpos, annot.rpos),
+                                        (annot1.lpos, annot1.rpos)):
                 return
         self.annotations.append(annot)
 
